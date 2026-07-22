@@ -161,8 +161,8 @@ export default function CapturePage() {
           aria-label={recording ? "Зупинити диктування" : "Почати диктування"}
           className={`flex h-20 w-20 shrink-0 items-center justify-center rounded-full shadow-lg transition-colors active:scale-95 ${
             recording
-              ? "animate-pulse bg-red-500 text-white ring-4 ring-red-200"
-              : "bg-accent text-white"
+              ? "animate-pulse bg-red-600 text-white ring-4 ring-red-200"
+              : "bg-red-500 text-white"
           }`}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-9 w-9">
