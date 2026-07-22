@@ -74,10 +74,8 @@ export default function CapturePage() {
       let message: string;
       if (tasks.length === 0) {
         message = "AI не знайшов задач у цьому записі";
-      } else if (placed.today > 0 && placed.inbox > 0) {
-        message = `AI створив задач: ${tasks.length} ✓ — ${placed.today} на сьогодні → Today, ${placed.inbox} → Inbox`;
-      } else if (placed.today > 0) {
-        message = `AI створив задач: ${tasks.length} ✓ — всі на сьогодні → Today`;
+      } else if (placed.dueToday > 0) {
+        message = `AI створив задач: ${tasks.length} ✓ — дивись Inbox (${placed.dueToday} з дедлайном сьогодні)`;
       } else {
         message = `AI створив задач: ${tasks.length} ✓ — дивись Inbox`;
       }

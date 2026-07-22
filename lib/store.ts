@@ -68,27 +68,27 @@ export function usePlanner() {
     setCaptures((prev) => [capture, ...prev]);
   }
 
-  function addTasks(parsed: ParsedTask[]): { today: number; inbox: number } {
+  // Усі нові задачі йдуть в Inbox; у Today користувач відправляє їх сам.
+  // dueToday — скільки з них мають дедлайн сьогодні (для підказки).
+  function addTasks(parsed: ParsedTask[]): { total: number; dueToday: number } {
     const now = Date.now();
     const todayIso = localISODate();
-    let todayCount = 0;
+    let dueToday = 0;
     const newTasks: Task[] = parsed.map((p, i) => {
-      // задачі з сьогоднішнім дедлайном одразу йдуть у план дня
-      const isToday = p.deadline === todayIso;
-      if (isToday) todayCount++;
+      if (p.deadline === todayIso) dueToday++;
       return {
         id: crypto.randomUUID(),
         title: p.title,
         priority: p.priority,
         time: p.time ?? undefined,
         deadline: p.deadline ?? undefined,
-        today: isToday,
+        today: false,
         done: false,
         createdAt: now + i,
       };
     });
     setTasks((prev) => [...newTasks, ...prev]);
-    return { today: todayCount, inbox: parsed.length - todayCount };
+    return { total: parsed.length, dueToday };
   }
 
   // Виконані вчора й раніше задачі переносимо в архів, щоб списки не розросталися
