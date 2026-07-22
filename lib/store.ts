@@ -42,6 +42,13 @@ function useStored<T>(key: string, initial: T) {
   return [value, setValue, loaded] as const;
 }
 
+export type ParsedTask = {
+  title: string;
+  priority: Priority;
+  time: string | null;
+  deadline: string | null;
+};
+
 export function usePlanner() {
   const [tasks, setTasks, tasksLoaded] = useStored<Task[]>("planner.tasks", []);
   const [captures, setCaptures, capturesLoaded] = useStored<Capture[]>(
@@ -58,10 +65,35 @@ export function usePlanner() {
     setCaptures((prev) => [capture, ...prev]);
   }
 
+  function addTasks(parsed: ParsedTask[]) {
+    const now = Date.now();
+    const newTasks: Task[] = parsed.map((p, i) => ({
+      id: crypto.randomUUID(),
+      title: p.title,
+      priority: p.priority,
+      time: p.time ?? undefined,
+      deadline: p.deadline ?? undefined,
+      today: false,
+      done: false,
+      createdAt: now + i,
+    }));
+    setTasks((prev) => [...newTasks, ...prev]);
+  }
+
   function toggleDone(id: string) {
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
     );
+  }
+
+  function toggleToday(id: string) {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, today: !t.today } : t)),
+    );
+  }
+
+  function removeTask(id: string) {
+    setTasks((prev) => prev.filter((t) => t.id !== id));
   }
 
   return {
@@ -69,7 +101,10 @@ export function usePlanner() {
     setTasks,
     captures,
     addCapture,
+    addTasks,
     toggleDone,
+    toggleToday,
+    removeTask,
     loaded: tasksLoaded && capturesLoaded,
   };
 }

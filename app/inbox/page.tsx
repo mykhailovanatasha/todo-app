@@ -15,7 +15,7 @@ const priorityLabels: Record<Priority, string> = {
 };
 
 export default function InboxPage() {
-  const { tasks, loaded } = usePlanner();
+  const { tasks, toggleToday, removeTask, loaded } = usePlanner();
   const inbox = tasks.filter((t) => !t.today);
 
   return (
@@ -30,7 +30,7 @@ export default function InboxPage() {
           </svg>
           <p className="text-lg font-medium">Поки порожньо</p>
           <p className="max-w-60 text-sm">
-            Задачі з&apos;являться тут, коли AI розбере твої записи з Capture
+            Надиктуй або запиши думки в Capture — AI розкладе їх на задачі тут
           </p>
         </div>
       ) : (
@@ -40,8 +40,19 @@ export default function InboxPage() {
               key={task.id}
               className="rounded-2xl border border-neutral-200 bg-white p-4"
             >
-              <p className="text-base font-medium">{task.title}</p>
-              <div className="flex flex-wrap gap-2 pt-2 text-xs">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-base font-medium">{task.title}</p>
+                <button
+                  onClick={() => removeTask(task.id)}
+                  aria-label="Видалити задачу"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-neutral-300 active:bg-neutral-100 active:text-neutral-500"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-5 w-5">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 pt-2 text-xs">
                 <span className={`rounded-full px-2.5 py-1 font-medium ${priorityStyles[task.priority]}`}>
                   {priorityLabels[task.priority]}
                 </span>
@@ -56,6 +67,15 @@ export default function InboxPage() {
                   </span>
                 )}
               </div>
+              <button
+                onClick={() => toggleToday(task.id)}
+                className="mt-3 flex h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-accent-soft text-sm font-semibold text-accent active:scale-[0.98]"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                  <path d="M5 12h14M12 5l7 7-7 7" />
+                </svg>
+                На сьогодні
+              </button>
             </li>
           ))}
         </ul>

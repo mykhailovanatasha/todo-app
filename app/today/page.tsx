@@ -3,7 +3,7 @@
 import { usePlanner } from "@/lib/store";
 
 export default function TodayPage() {
-  const { tasks, toggleDone, loaded } = usePlanner();
+  const { tasks, toggleDone, toggleToday, loaded } = usePlanner();
   const today = tasks.filter((t) => t.today);
   const doneCount = today.filter((t) => t.done).length;
 
@@ -26,16 +26,26 @@ export default function TodayPage() {
           </svg>
           <p className="text-lg font-medium">План на сьогодні порожній</p>
           <p className="max-w-60 text-sm">
-            AI сформує чекліст дня із задач у твоєму беклозі
+            Додай задачі з Inbox кнопкою «На сьогодні»
           </p>
         </div>
       ) : (
         <ul className="flex flex-col gap-3">
           {today.map((task) => (
-            <li key={task.id}>
+            <li key={task.id} className="relative">
+              <button
+                onClick={() => toggleToday(task.id)}
+                aria-label="Повернути в Inbox"
+                className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full text-neutral-300 active:bg-neutral-100 active:text-neutral-500"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                  <path d="M9 14L4 9l5-5" />
+                  <path d="M4 9h10a6 6 0 016 6v1" />
+                </svg>
+              </button>
               <button
                 onClick={() => toggleDone(task.id)}
-                className="flex min-h-16 w-full items-center gap-3 rounded-2xl border border-neutral-200 bg-white p-4 text-left active:scale-[0.99]"
+                className="flex min-h-16 w-full items-center gap-3 rounded-2xl border border-neutral-200 bg-white p-4 pr-11 text-left active:scale-[0.99]"
               >
                 <span
                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${

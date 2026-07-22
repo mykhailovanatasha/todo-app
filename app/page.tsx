@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePlanner } from "@/lib/store";
+import { usePlanner, type ParsedTask } from "@/lib/store";
+
+type Status = { kind: "ok" | "error"; message: string };
 
 export default function CapturePage() {
-  const { addCapture } = usePlanner();
+  const { addCapture, addTasks } = usePlanner();
   const [text, setText] = useState("");
   const [recording, setRecording] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [status, setStatus] = useState<Status | null>(null);
   const [micError, setMicError] = useState<string | null>(null);
   const recRef = useRef<any>(null);
 
@@ -47,12 +50,42 @@ export default function CapturePage() {
     setRecording(true);
   }
 
-  function save() {
-    if (!text.trim()) return;
-    addCapture(text);
-    setText("");
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  async function save() {
+    const trimmed = text.trim();
+    if (!trimmed || parsing) return;
+
+    setParsing(true);
+    setStatus(null);
+    addCapture(trimmed);
+
+    try {
+      const res = await fetch("/api/parse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: trimmed }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error ?? "Помилка сервера");
+      }
+      const tasks: ParsedTask[] = data.tasks ?? [];
+      addTasks(tasks);
+      setText("");
+      setStatus({
+        kind: "ok",
+        message:
+          tasks.length > 0
+            ? `AI створив задач: ${tasks.length} ✓ — дивись Inbox`
+            : "AI не знайшов задач у цьому записі",
+      });
+    } catch (e) {
+      setStatus({
+        kind: "error",
+        message: e instanceof Error ? e.message : "Не вдалося розібрати запис",
+      });
+    } finally {
+      setParsing(false);
+    }
   }
 
   return (
@@ -66,12 +99,14 @@ export default function CapturePage() {
         className="flex-1 resize-none rounded-2xl border border-neutral-200 bg-white p-4 text-lg leading-relaxed outline-none placeholder:text-neutral-400 focus:border-accent"
       />
 
-      {micError && (
-        <p className="pt-2 text-sm text-red-500">{micError}</p>
-      )}
-      {saved && (
-        <p className="pt-2 text-sm font-medium text-accent">
-          Збережено ✓ — AI-розбір на задачі з&apos;явиться в наступній версії
+      {micError && <p className="pt-2 text-sm text-red-500">{micError}</p>}
+      {status && (
+        <p
+          className={`pt-2 text-sm font-medium ${
+            status.kind === "ok" ? "text-accent" : "text-red-500"
+          }`}
+        >
+          {status.message}
         </p>
       )}
 
@@ -95,10 +130,19 @@ export default function CapturePage() {
 
         <button
           onClick={save}
-          disabled={!text.trim()}
-          className="h-16 flex-1 rounded-2xl bg-neutral-900 text-lg font-semibold text-white transition-opacity active:scale-[0.98] disabled:opacity-30"
+          disabled={!text.trim() || parsing}
+          className="flex h-16 flex-1 items-center justify-center gap-2 rounded-2xl bg-neutral-900 text-lg font-semibold text-white transition-opacity active:scale-[0.98] disabled:opacity-30"
         >
-          Зберегти
+          {parsing ? (
+            <>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-5 w-5 animate-spin">
+                <path d="M21 12a9 9 0 11-6.22-8.56" />
+              </svg>
+              AI розбирає…
+            </>
+          ) : (
+            "Зберегти"
+          )}
         </button>
       </div>
     </div>
