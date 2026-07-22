@@ -1,28 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { localISODate } from "@/lib/dates";
+import type { Priority, Task, Capture } from "@/lib/types";
 
-export type Priority = "low" | "medium" | "high";
-
-export type Task = {
-  id: string;
-  title: string;
-  priority: Priority;
-  time?: string; // "14:00"
-  deadline?: string; // ISO-дата, наприклад "2026-07-25"
-  today: boolean;
-  done: boolean;
-  doneAt?: number;
-  archived?: boolean;
-  createdAt: number;
-};
-
-export type Capture = {
-  id: string;
-  text: string;
-  createdAt: number;
-};
+export type { Priority, Task, Capture } from "@/lib/types";
 
 function useStored<T>(key: string, initial: T) {
   const [value, setValue] = useState<T>(initial);
@@ -45,6 +27,119 @@ function useStored<T>(key: string, initial: T) {
   return [value, setValue, loaded] as const;
 }
 
+// Стабільний анонімний ідентифікатор користувача (для звʼязку застосунок ↔ хмара ↔ Telegram)
+function useUserId(): string | null {
+  const [userId, setUserId] = useState<string | null>(null);
+  useEffect(() => {
+    let id = localStorage.getItem("planner.userId");
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem("planner.userId", id);
+    }
+    setUserId(id);
+  }, []);
+  return userId;
+}
+
+// Задачі в хмарі (єдине джерело правди) + миттєвий локальний кеш
+function useCloudTasks() {
+  const userId = useUserId();
+  const [tasks, setTasksState] = useState<Task[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const updatedAtRef = useRef(0);
+  const pushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Початкове завантаження: кеш миттєво, потім хмара
+  useEffect(() => {
+    if (!userId) return;
+    try {
+      const raw = localStorage.getItem("planner.tasks");
+      if (raw) setTasksState(JSON.parse(raw));
+    } catch {}
+
+    (async () => {
+      try {
+        const res = await fetch(`/api/tasks?userId=${userId}`);
+        const data = await res.json();
+        if (data.tasks) {
+          updatedAtRef.current = data.updatedAt;
+          setTasksState(data.tasks);
+          localStorage.setItem("planner.tasks", JSON.stringify(data.tasks));
+        } else {
+          // хмара порожня — переносимо локальні задачі, якщо є
+          const raw = localStorage.getItem("planner.tasks");
+          const local: Task[] = raw ? JSON.parse(raw) : [];
+          if (local.length) {
+            const r = await fetch("/api/tasks", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId, tasks: local }),
+            });
+            updatedAtRef.current = (await r.json()).updatedAt;
+          }
+        }
+      } catch {
+        // офлайн — працюємо з кешу
+      }
+      setLoaded(true);
+    })();
+  }, [userId]);
+
+  // Опитування хмари: підхоплюємо зміни з Telegram
+  useEffect(() => {
+    if (!userId) return;
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/tasks?userId=${userId}`);
+        const data = await res.json();
+        if (data.tasks && data.updatedAt > updatedAtRef.current) {
+          updatedAtRef.current = data.updatedAt;
+          setTasksState(data.tasks);
+          localStorage.setItem("planner.tasks", JSON.stringify(data.tasks));
+        }
+      } catch {}
+    };
+    const iv = setInterval(poll, 20000);
+    window.addEventListener("focus", poll);
+    return () => {
+      clearInterval(iv);
+      window.removeEventListener("focus", poll);
+    };
+  }, [userId]);
+
+  // Обгортка сеттера: локально миттєво, у хмару — з невеликою затримкою
+  const setTasks = useCallback(
+    (updater: Task[] | ((prev: Task[]) => Task[])) => {
+      setTasksState((prev) => {
+        const next =
+          typeof updater === "function"
+            ? (updater as (p: Task[]) => Task[])(prev)
+            : updater;
+        try {
+          localStorage.setItem("planner.tasks", JSON.stringify(next));
+        } catch {}
+        if (userId) {
+          if (pushTimer.current) clearTimeout(pushTimer.current);
+          pushTimer.current = setTimeout(async () => {
+            try {
+              const r = await fetch("/api/tasks", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId, tasks: next }),
+              });
+              updatedAtRef.current = (await r.json()).updatedAt;
+            } catch {}
+          }, 600);
+        }
+        return next;
+      });
+    },
+    [userId],
+  );
+
+  return { tasks, setTasks, loaded, userId };
+}
+
 export type ParsedTask = {
   title: string;
   priority: Priority;
@@ -53,7 +148,12 @@ export type ParsedTask = {
 };
 
 export function usePlanner() {
-  const [tasks, setTasks, tasksLoaded] = useStored<Task[]>("planner.tasks", []);
+  const {
+    tasks,
+    setTasks,
+    loaded: tasksLoaded,
+    userId,
+  } = useCloudTasks();
   const [captures, setCaptures, capturesLoaded] = useStored<Capture[]>(
     "planner.captures",
     [],
@@ -149,6 +249,7 @@ export function usePlanner() {
     toggleToday,
     removeTask,
     clearArchive,
+    userId,
     loaded: tasksLoaded && capturesLoaded,
   };
 }

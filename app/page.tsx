@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { usePlanner, type ParsedTask } from "@/lib/store";
 
 type Status = { kind: "ok" | "error"; message: string };
@@ -101,9 +102,19 @@ export default function CapturePage() {
           alt="Степан"
           className="h-11 w-11 shrink-0 rounded-full border border-neutral-200 object-cover"
         />
-        <h1 className="text-2xl font-bold leading-tight">
+        <h1 className="flex-1 text-2xl font-bold leading-tight">
           Приберемо хаос у&nbsp;твоїй голові
         </h1>
+        <Link
+          href="/settings"
+          aria-label="Налаштування"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-neutral-400 active:bg-neutral-100"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9c.2.63.77 1.05 1.42 1.05H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+          </svg>
+        </Link>
       </div>
 
       <textarea

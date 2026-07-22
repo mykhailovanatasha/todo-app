@@ -1,0 +1,22 @@
+name: Telegram reminders
+
+# Час у cron — UTC. Влітку Київ = UTC+3, тож:
+#   10:00 Київ → 07:00 UTC · 14:00 → 11:00 UTC · 21:00 → 18:00 UTC
+# Роут сам визначає слот за київською годиною, а повторний виклик
+# захищений від дубля (одне нагадування на слот на день).
+on:
+  schedule:
+    - cron: "0 7 * * *"
+    - cron: "15 7 * * *"
+    - cron: "0 11 * * *"
+    - cron: "15 11 * * *"
+    - cron: "0 18 * * *"
+    - cron: "15 18 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger reminders
+        run: curl -fsS "https://todo-app-nata.vercel.app/api/cron"
