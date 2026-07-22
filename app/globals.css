@@ -9,6 +9,16 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+@keyframes wave {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
 body {
   background: #fafafa;
   color: #171717;

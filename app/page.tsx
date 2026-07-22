@@ -90,18 +90,61 @@ export default function CapturePage() {
     }
   }
 
+  const showSaveHint =
+    !!text.trim() && !recording && !parsing && status?.kind !== "ok";
+
   return (
     <div className="flex flex-1 flex-col">
-      <h1 className="pb-3 text-2xl font-bold">Що в голові?</h1>
+      <div className="flex items-center gap-3 pb-3">
+        <img
+          src="/stepan.jpg"
+          alt="Степан"
+          className="h-11 w-11 shrink-0 rounded-full border border-neutral-200 object-cover"
+        />
+        <h1 className="text-2xl font-bold leading-tight">
+          Приберемо хаос у&nbsp;твоїй голові
+        </h1>
+      </div>
 
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Виливай усе підряд: зустрічі, ідеї, «не забути купити»… AI сам розбере це на задачі."
+        placeholder="Виливай усе підряд: зустрічі, задачі, «не забудь купити». AI-помічник Степан все приготує на задачі."
         className="flex-1 resize-none rounded-2xl border border-neutral-200 bg-white p-4 text-lg leading-relaxed outline-none placeholder:text-neutral-400 focus:border-accent"
       />
 
+      {recording && (
+        <div className="mt-3 flex items-center gap-3 rounded-2xl bg-red-50 p-3">
+          <img
+            src="/stepan.jpg"
+            alt="Степан слухає"
+            className="h-10 w-10 shrink-0 animate-pulse rounded-full border-2 border-red-300 object-cover"
+          />
+          <div className="flex flex-1 items-center gap-[3px]" aria-hidden>
+            {Array.from({ length: 16 }).map((_, i) => (
+              <span
+                key={i}
+                className="w-[3px] flex-1 rounded-full bg-red-400"
+                style={{
+                  height: "24px",
+                  animation: "wave 0.9s ease-in-out infinite",
+                  animationDelay: `${(i % 8) * 0.09}s`,
+                }}
+              />
+            ))}
+          </div>
+          <span className="shrink-0 text-sm font-medium text-red-600">
+            Записую…
+          </span>
+        </div>
+      )}
+
       {micError && <p className="pt-2 text-sm text-red-500">{micError}</p>}
+      {showSaveHint && (
+        <p className="pt-3 text-sm font-medium text-accent">
+          Готово? Натисни «Зберегти» — Степан розбере на задачі 👨‍🍳
+        </p>
+      )}
       {status && (
         <p
           className={`pt-2 text-sm font-medium ${
@@ -118,7 +161,7 @@ export default function CapturePage() {
           aria-label={recording ? "Зупинити диктування" : "Почати диктування"}
           className={`flex h-20 w-20 shrink-0 items-center justify-center rounded-full shadow-lg transition-colors active:scale-95 ${
             recording
-              ? "animate-pulse bg-red-500 text-white"
+              ? "animate-pulse bg-red-500 text-white ring-4 ring-red-200"
               : "bg-accent text-white"
           }`}
         >
