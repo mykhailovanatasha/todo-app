@@ -120,7 +120,7 @@ export default function CapturePage() {
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Виливай усе підряд: зустрічі, задачі, «не забудь купити». AI-помічник Степан все приготує на задачі."
+        placeholder="Виливай усе підряд: зустрічі, задачі, «не забудь купити». AI-помічник Степан все приготує на задачі, а Telegram надішле сповіщення."
         className="flex-1 resize-none rounded-2xl border border-neutral-200 bg-white p-4 text-lg leading-relaxed outline-none placeholder:text-neutral-400 focus:border-accent"
       />
 
