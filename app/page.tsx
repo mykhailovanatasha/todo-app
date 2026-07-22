@@ -69,15 +69,19 @@ export default function CapturePage() {
         throw new Error(data.error ?? "Помилка сервера");
       }
       const tasks: ParsedTask[] = data.tasks ?? [];
-      addTasks(tasks);
+      const placed = addTasks(tasks);
       setText("");
-      setStatus({
-        kind: "ok",
-        message:
-          tasks.length > 0
-            ? `AI створив задач: ${tasks.length} ✓ — дивись Inbox`
-            : "AI не знайшов задач у цьому записі",
-      });
+      let message: string;
+      if (tasks.length === 0) {
+        message = "AI не знайшов задач у цьому записі";
+      } else if (placed.today > 0 && placed.inbox > 0) {
+        message = `AI створив задач: ${tasks.length} ✓ — ${placed.today} на сьогодні → Today, ${placed.inbox} → Inbox`;
+      } else if (placed.today > 0) {
+        message = `AI створив задач: ${tasks.length} ✓ — всі на сьогодні → Today`;
+      } else {
+        message = `AI створив задач: ${tasks.length} ✓ — дивись Inbox`;
+      }
+      setStatus({ kind: "ok", message });
     } catch (e) {
       setStatus({
         kind: "error",

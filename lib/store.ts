@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { localISODate } from "@/lib/dates";
 
 export type Priority = "low" | "medium" | "high";
 
@@ -65,19 +66,27 @@ export function usePlanner() {
     setCaptures((prev) => [capture, ...prev]);
   }
 
-  function addTasks(parsed: ParsedTask[]) {
+  function addTasks(parsed: ParsedTask[]): { today: number; inbox: number } {
     const now = Date.now();
-    const newTasks: Task[] = parsed.map((p, i) => ({
-      id: crypto.randomUUID(),
-      title: p.title,
-      priority: p.priority,
-      time: p.time ?? undefined,
-      deadline: p.deadline ?? undefined,
-      today: false,
-      done: false,
-      createdAt: now + i,
-    }));
+    const todayIso = localISODate();
+    let todayCount = 0;
+    const newTasks: Task[] = parsed.map((p, i) => {
+      // задачі з сьогоднішнім дедлайном одразу йдуть у план дня
+      const isToday = p.deadline === todayIso;
+      if (isToday) todayCount++;
+      return {
+        id: crypto.randomUUID(),
+        title: p.title,
+        priority: p.priority,
+        time: p.time ?? undefined,
+        deadline: p.deadline ?? undefined,
+        today: isToday,
+        done: false,
+        createdAt: now + i,
+      };
+    });
     setTasks((prev) => [...newTasks, ...prev]);
+    return { today: todayCount, inbox: parsed.length - todayCount };
   }
 
   function toggleDone(id: string) {

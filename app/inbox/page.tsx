@@ -1,6 +1,7 @@
 "use client";
 
 import { usePlanner, type Priority } from "@/lib/store";
+import { formatDeadline } from "@/lib/dates";
 
 const priorityStyles: Record<Priority, string> = {
   high: "bg-red-100 text-red-700",
@@ -61,11 +62,21 @@ export default function InboxPage() {
                     🕐 {task.time}
                   </span>
                 )}
-                {task.deadline && (
-                  <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-neutral-600">
-                    📅 {task.deadline}
-                  </span>
-                )}
+                {task.deadline &&
+                  (() => {
+                    const d = formatDeadline(task.deadline);
+                    return (
+                      <span
+                        className={`rounded-full px-2.5 py-1 ${
+                          d.overdue
+                            ? "bg-red-100 font-medium text-red-700"
+                            : "bg-neutral-100 text-neutral-600"
+                        }`}
+                      >
+                        📅 {d.overdue ? `прострочено · ${d.label}` : d.label}
+                      </span>
+                    );
+                  })()}
               </div>
               <button
                 onClick={() => toggleToday(task.id)}
