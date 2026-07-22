@@ -149,14 +149,17 @@ export default function TodayPage() {
         </>
       )}
 
-      {archivedCount > 0 && (
-        <Link
-          href="/archive"
-          className="py-6 text-center text-sm text-neutral-400 underline underline-offset-2"
-        >
-          Архів виконаного ({archivedCount})
-        </Link>
-      )}
+      <Link
+        href="/archive"
+        className="mt-auto flex items-center justify-center gap-2 py-6 text-sm text-neutral-400 active:text-neutral-600"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+          <rect x="3" y="4" width="18" height="4" rx="1" />
+          <path d="M5 8v11a1 1 0 001 1h12a1 1 0 001-1V8" />
+          <path d="M10 12h4" />
+        </svg>
+        Архів виконаного{archivedCount > 0 ? ` (${archivedCount})` : ""}
+      </Link>
     </div>
   );
 }
