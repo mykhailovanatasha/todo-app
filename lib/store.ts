@@ -132,12 +132,19 @@ export function usePlanner() {
     setTasks((prev) => prev.filter((t) => t.id !== id));
   }
 
+  function editTask(id: string, patch: Partial<Pick<Task, "title" | "priority" | "time" | "deadline">>) {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+    );
+  }
+
   return {
     tasks,
     setTasks,
     captures,
     addCapture,
     addTasks,
+    editTask,
     toggleDone,
     toggleToday,
     removeTask,

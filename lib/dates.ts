@@ -2,6 +2,18 @@ export function localISODate(offsetDays = 0): string {
   return new Date(Date.now() + offsetDays * 86_400_000).toLocaleDateString("sv-SE");
 }
 
+export type InboxGroup = "overdue" | "today" | "week" | "later" | "someday";
+
+// Визначаємо, у яку групу Inbox падає задача за її дедлайном
+export function inboxGroup(deadline?: string): InboxGroup {
+  if (!deadline) return "someday";
+  const today = localISODate();
+  if (deadline < today) return "overdue";
+  if (deadline === today) return "today";
+  if (deadline <= localISODate(7)) return "week";
+  return "later";
+}
+
 export function formatDeadline(iso: string): {
   label: string;
   overdue: boolean;

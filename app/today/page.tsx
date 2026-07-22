@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePlanner, type Priority } from "@/lib/store";
 import { byPriorityThenTime } from "@/lib/sort";
+import Celebration from "@/components/Celebration";
 
 const priorityBorder: Record<Priority, string> = {
   high: "border-l-red-400",
@@ -12,6 +14,8 @@ const priorityBorder: Record<Priority, string> = {
 
 export default function TodayPage() {
   const { tasks, toggleDone, toggleToday, loaded } = usePlanner();
+  const [celebrate, setCelebrate] = useState(false);
+  const prevAllDone = useRef(true);
 
   const todayTasks = tasks.filter((t) => t.today && !t.archived);
   const active = todayTasks.filter((t) => !t.done).sort(byPriorityThenTime);
@@ -19,6 +23,13 @@ export default function TodayPage() {
     .filter((t) => t.done)
     .sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0));
   const archivedCount = tasks.filter((t) => t.archived).length;
+
+  // Святкуємо лише в момент, коли остання активна задача дня стала виконаною
+  const allDone = todayTasks.length > 0 && active.length === 0;
+  useEffect(() => {
+    if (allDone && !prevAllDone.current) setCelebrate(true);
+    prevAllDone.current = allDone;
+  }, [allDone]);
 
   function renderTask(task: (typeof tasks)[number], dimmed: boolean) {
     return (
@@ -69,6 +80,7 @@ export default function TodayPage() {
 
   return (
     <div className="flex flex-1 flex-col">
+      {celebrate && <Celebration onClose={() => setCelebrate(false)} />}
       <div className="flex items-center justify-between pb-3">
         <h1 className="text-2xl font-bold">Today</h1>
         {todayTasks.length > 0 && (
