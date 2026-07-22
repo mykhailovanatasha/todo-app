@@ -13,6 +13,8 @@ export type Task = {
   deadline?: string; // ISO-дата, наприклад "2026-07-25"
   today: boolean;
   done: boolean;
+  doneAt?: number;
+  archived?: boolean;
   createdAt: number;
 };
 
@@ -89,10 +91,35 @@ export function usePlanner() {
     return { today: todayCount, inbox: parsed.length - todayCount };
   }
 
+  // Виконані вчора й раніше задачі переносимо в архів, щоб списки не розросталися
+  useEffect(() => {
+    if (!tasksLoaded) return;
+    const startOfToday = new Date(new Date().toDateString()).getTime();
+    setTasks((prev) => {
+      let changed = false;
+      const next = prev.map((t) => {
+        if (t.done && !t.archived && (t.doneAt ?? t.createdAt) < startOfToday) {
+          changed = true;
+          return { ...t, archived: true };
+        }
+        return t;
+      });
+      return changed ? next : prev;
+    });
+  }, [tasksLoaded, setTasks]);
+
   function toggleDone(id: string) {
     setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
+      prev.map((t) =>
+        t.id === id
+          ? { ...t, done: !t.done, doneAt: !t.done ? Date.now() : undefined }
+          : t,
+      ),
     );
+  }
+
+  function clearArchive() {
+    setTasks((prev) => prev.filter((t) => !t.archived));
   }
 
   function toggleToday(id: string) {
@@ -114,6 +141,7 @@ export function usePlanner() {
     toggleDone,
     toggleToday,
     removeTask,
+    clearArchive,
     loaded: tasksLoaded && capturesLoaded,
   };
 }

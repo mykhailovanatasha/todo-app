@@ -2,6 +2,7 @@
 
 import { usePlanner, type Priority } from "@/lib/store";
 import { formatDeadline } from "@/lib/dates";
+import { byDeadlineThenPriority } from "@/lib/sort";
 
 const priorityStyles: Record<Priority, string> = {
   high: "bg-red-100 text-red-700",
@@ -15,9 +16,17 @@ const priorityLabels: Record<Priority, string> = {
   low: "Не горить",
 };
 
+const priorityBorder: Record<Priority, string> = {
+  high: "border-l-red-400",
+  medium: "border-l-amber-400",
+  low: "border-l-neutral-200",
+};
+
 export default function InboxPage() {
   const { tasks, toggleToday, removeTask, loaded } = usePlanner();
-  const inbox = tasks.filter((t) => !t.today);
+  const inbox = tasks
+    .filter((t) => !t.today && !t.archived)
+    .sort(byDeadlineThenPriority);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -39,7 +48,7 @@ export default function InboxPage() {
           {inbox.map((task) => (
             <li
               key={task.id}
-              className="rounded-2xl border border-neutral-200 bg-white p-4"
+              className={`rounded-2xl border border-l-4 border-neutral-200 bg-white p-4 ${priorityBorder[task.priority]}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="text-base font-medium">{task.title}</p>
