@@ -75,9 +75,9 @@ export default function InboxPage() {
                   (() => {
                     const d = formatDeadline(task.deadline);
                     const badgeClass = d.overdue
-                      ? "bg-red-100 font-medium text-red-700"
+                      ? "bg-red-500 font-medium text-white"
                       : d.isToday
-                        ? "bg-accent-soft font-medium text-accent"
+                        ? "bg-red-100 font-medium text-red-700"
                         : "bg-neutral-100 text-neutral-600";
                     return (
                       <span className={`rounded-full px-2.5 py-1 ${badgeClass}`}>

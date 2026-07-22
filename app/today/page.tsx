@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { usePlanner, type Priority } from "@/lib/store";
 import { byPriorityThenTime } from "@/lib/sort";
@@ -13,7 +12,6 @@ const priorityBorder: Record<Priority, string> = {
 
 export default function TodayPage() {
   const { tasks, toggleDone, toggleToday, loaded } = usePlanner();
-  const [copied, setCopied] = useState(false);
 
   const todayTasks = tasks.filter((t) => t.today && !t.archived);
   const active = todayTasks.filter((t) => !t.done).sort(byPriorityThenTime);
@@ -21,24 +19,6 @@ export default function TodayPage() {
     .filter((t) => t.done)
     .sort((a, b) => (b.doneAt ?? 0) - (a.doneAt ?? 0));
   const archivedCount = tasks.filter((t) => t.archived).length;
-
-  async function sharePlan() {
-    const lines = active.map(
-      (t) => `• ${t.title}${t.time ? ` — ${t.time}` : ""}`,
-    );
-    const text = `📋 Мій план на сьогодні:\n${lines.join("\n")}`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ text });
-      } catch {
-        // користувач закрив вікно шерингу
-      }
-    } else {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  }
 
   function renderTask(task: (typeof tasks)[number], dimmed: boolean) {
     return (
@@ -91,33 +71,12 @@ export default function TodayPage() {
     <div className="flex flex-1 flex-col">
       <div className="flex items-center justify-between pb-3">
         <h1 className="text-2xl font-bold">Today</h1>
-        <div className="flex items-center gap-2">
-          {todayTasks.length > 0 && (
-            <span className="text-sm text-neutral-400">
-              {doneList.length}/{todayTasks.length}
-            </span>
-          )}
-          {active.length > 0 && (
-            <button
-              onClick={sharePlan}
-              aria-label="Поділитися планом"
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft text-accent active:scale-95"
-            >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8" />
-                <path d="M16 6l-4-4-4 4" />
-                <path d="M12 2v13" />
-              </svg>
-            </button>
-          )}
-        </div>
+        {todayTasks.length > 0 && (
+          <span className="text-sm text-neutral-400">
+            {doneList.length}/{todayTasks.length}
+          </span>
+        )}
       </div>
-
-      {copied && (
-        <p className="pb-2 text-sm font-medium text-accent">
-          План скопійовано — встав у будь-який чат ✓
-        </p>
-      )}
 
       {loaded && todayTasks.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center text-neutral-400">
