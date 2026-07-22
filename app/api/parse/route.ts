@@ -117,6 +117,12 @@ export async function POST(req: Request) {
       );
     }
     if (error instanceof Anthropic.APIError) {
+      if (error.message.includes("credit balance")) {
+        return Response.json(
+          { error: "На акаунті Anthropic закінчились кредити — поповни баланс у console.anthropic.com → Plans & Billing" },
+          { status: 402 },
+        );
+      }
       return Response.json(
         { error: `Помилка AI (${error.status})` },
         { status: 502 },
