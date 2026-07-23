@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import BottomNav from "@/components/BottomNav";
+import { PlannerProvider } from "@/lib/store";
 
 export const metadata: Metadata = {
   title: "AI-планер дня",
@@ -20,12 +21,14 @@ export default function RootLayout({
   return (
     <html lang="uk">
       <body className="antialiased">
-        <div className="mx-auto flex min-h-dvh max-w-md flex-col">
-          <main className="flex flex-1 flex-col px-4 pt-4 pb-28">
-            {children}
-          </main>
-          <BottomNav />
-        </div>
+        <PlannerProvider>
+          <div className="mx-auto flex min-h-dvh max-w-md flex-col">
+            <main className="flex flex-1 flex-col px-4 pt-4 pb-28">
+              {children}
+            </main>
+            <BottomNav />
+          </div>
+        </PlannerProvider>
       </body>
     </html>
   );

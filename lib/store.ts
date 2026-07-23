@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  createElement,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { localISODate } from "@/lib/dates";
 import type { Priority, Task, Capture } from "@/lib/types";
 
@@ -48,6 +56,7 @@ function useCloudTasks() {
   const [loaded, setLoaded] = useState(false);
   const updatedAtRef = useRef(0);
   const pushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dirtyRef = useRef(false); // є незбережені локальні зміни — не затирати їх хмарою
 
   // Початкове завантаження: кеш миттєво, потім хмара
   useEffect(() => {
@@ -61,11 +70,11 @@ function useCloudTasks() {
       try {
         const res = await fetch(`/api/tasks?userId=${userId}`);
         const data = await res.json();
-        if (data.tasks) {
+        if (data.tasks && !dirtyRef.current) {
           updatedAtRef.current = data.updatedAt;
           setTasksState(data.tasks);
           localStorage.setItem("planner.tasks", JSON.stringify(data.tasks));
-        } else {
+        } else if (!data.tasks) {
           // хмара порожня — переносимо локальні задачі, якщо є
           const raw = localStorage.getItem("planner.tasks");
           const local: Task[] = raw ? JSON.parse(raw) : [];
@@ -92,7 +101,11 @@ function useCloudTasks() {
       try {
         const res = await fetch(`/api/tasks?userId=${userId}`);
         const data = await res.json();
-        if (data.tasks && data.updatedAt > updatedAtRef.current) {
+        if (
+          data.tasks &&
+          data.updatedAt > updatedAtRef.current &&
+          !dirtyRef.current
+        ) {
           updatedAtRef.current = data.updatedAt;
           setTasksState(data.tasks);
           localStorage.setItem("planner.tasks", JSON.stringify(data.tasks));
@@ -119,6 +132,7 @@ function useCloudTasks() {
           localStorage.setItem("planner.tasks", JSON.stringify(next));
         } catch {}
         if (userId) {
+          dirtyRef.current = true; // не даємо хмарі затерти цю зміну до збереження
           if (pushTimer.current) clearTimeout(pushTimer.current);
           pushTimer.current = setTimeout(async () => {
             try {
@@ -129,6 +143,7 @@ function useCloudTasks() {
               });
               updatedAtRef.current = (await r.json()).updatedAt;
             } catch {}
+            dirtyRef.current = false;
           }, 600);
         }
         return next;
@@ -147,7 +162,7 @@ export type ParsedTask = {
   deadline: string | null;
 };
 
-export function usePlanner() {
+function usePlannerState() {
   const {
     tasks,
     setTasks,
@@ -252,4 +267,20 @@ export function usePlanner() {
     userId,
     loaded: tasksLoaded && capturesLoaded,
   };
+}
+
+// Єдиний спільний стан на весь застосунок — усі екрани бачать ті самі задачі,
+// перехід між вкладками не перезавантажує і не затирає зміни.
+type PlannerValue = ReturnType<typeof usePlannerState>;
+const PlannerContext = createContext<PlannerValue | null>(null);
+
+export function PlannerProvider({ children }: { children: React.ReactNode }) {
+  const value = usePlannerState();
+  return createElement(PlannerContext.Provider, { value }, children);
+}
+
+export function usePlanner(): PlannerValue {
+  const ctx = useContext(PlannerContext);
+  if (!ctx) throw new Error("usePlanner має бути всередині PlannerProvider");
+  return ctx;
 }
