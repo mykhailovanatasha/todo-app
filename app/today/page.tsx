@@ -37,23 +37,24 @@ export default function TodayPage() {
         <button
           onClick={() => toggleToday(task.id)}
           aria-label="Повернути в Inbox"
-          className="absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full text-neutral-300 active:bg-neutral-100 active:text-neutral-500"
+          className="absolute right-2 top-2 z-10 flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium text-neutral-400 active:bg-neutral-100 active:text-neutral-600"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
             <path d="M9 14L4 9l5-5" />
             <path d="M4 9h10a6 6 0 016 6v1" />
           </svg>
+          В Inbox
         </button>
         <button
           onClick={() => toggleDone(task.id)}
-          className={`flex min-h-16 w-full items-center gap-3 rounded-2xl border border-l-4 border-neutral-200 bg-white p-4 pr-11 text-left active:scale-[0.99] ${
+          className={`flex min-h-16 w-full items-center gap-3 rounded-2xl border border-l-4 border-neutral-200 bg-white p-4 pt-9 text-left active:scale-[0.99] ${
             dimmed ? "border-l-neutral-200 opacity-60" : priorityBorder[task.priority]
           }`}
         >
           <span
             className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
               task.done
-                ? "border-accent bg-accent text-white"
+                ? "border-green-500 bg-green-500 text-white"
                 : "border-neutral-300"
             }`}
           >
@@ -81,12 +82,24 @@ export default function TodayPage() {
   return (
     <div className="flex flex-1 flex-col">
       {celebrate && <Celebration onClose={() => setCelebrate(false)} />}
-      <div className="flex items-center justify-between pb-3">
-        <h1 className="text-2xl font-bold">Today</h1>
+      <div className="pb-4">
+        <div className="flex items-baseline justify-between">
+          <h1 className="text-2xl font-bold">Today</h1>
+          {todayTasks.length > 0 && (
+            <span className="text-sm font-medium text-neutral-500">
+              {doneList.length}/{todayTasks.length} виконано
+            </span>
+          )}
+        </div>
         {todayTasks.length > 0 && (
-          <span className="text-sm text-neutral-400">
-            {doneList.length}/{todayTasks.length}
-          </span>
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-neutral-200">
+            <div
+              className="h-full rounded-full bg-green-500 transition-all duration-500"
+              style={{
+                width: `${Math.round((doneList.length / todayTasks.length) * 100)}%`,
+              }}
+            />
+          </div>
         )}
       </div>
 
