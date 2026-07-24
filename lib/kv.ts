@@ -24,8 +24,15 @@ export async function saveTasks(userId: string, tasks: Task[]): Promise<number> 
   return updatedAt;
 }
 
-// Прив'язуємо Telegram-чат до користувача застосунку (обидва напрямки + список)
+// Прив'язуємо Telegram-чат до користувача застосунку (обидва напрямки + список).
+// Один чат = один користувач: стару прив'язку цього чату прибираємо,
+// щоб бот не слав задачі зі старого «профілю».
 export async function linkChat(userId: string, chatId: number): Promise<void> {
+  const prev = await getUserForChat(chatId);
+  if (prev && prev !== userId) {
+    await redis.srem(LINKED_SET, prev);
+    await redis.del(userToChatKey(prev));
+  }
   await Promise.all([
     redis.set(chatToUserKey(chatId), userId),
     redis.set(userToChatKey(userId), chatId),

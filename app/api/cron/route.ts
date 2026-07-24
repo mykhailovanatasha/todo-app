@@ -1,4 +1,10 @@
-import { redis, getLinkedUsers, getUserData, getChatForUser } from "@/lib/kv";
+import {
+  redis,
+  getLinkedUsers,
+  getUserData,
+  getChatForUser,
+  getUserForChat,
+} from "@/lib/kv";
 import {
   sendMessage,
   morningMessage,
@@ -25,13 +31,17 @@ export async function GET(req: Request) {
   let sent = 0;
 
   for (const userId of users) {
+    const chatId = await getChatForUser(userId);
+    if (!chatId) continue;
+
+    // пропускаємо застарілі прив'язки: чат уже належить іншому профілю
+    const current = await getUserForChat(chatId);
+    if (current !== userId) continue;
+
     // антиспам: один слот — один раз на день на користувача
     const dedupeKey = `sent:${userId}:${slot}:${today}`;
     const already = await redis.set(dedupeKey, 1, { nx: true, ex: 172800 });
     if (already === null) continue; // вже надсилали сьогодні
-
-    const chatId = await getChatForUser(userId);
-    if (!chatId) continue;
     const data = await getUserData(userId);
     const tasks = data?.tasks ?? [];
 
