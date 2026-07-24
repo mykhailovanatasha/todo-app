@@ -13,6 +13,11 @@ export function webhookSecret(): string {
     .slice(0, 40);
 }
 
+export async function getWebhookInfo(): Promise<unknown> {
+  const res = await fetch(API("getWebhookInfo"));
+  return res.json();
+}
+
 export async function setWebhook(url: string): Promise<unknown> {
   const res = await fetch(API("setWebhook"), {
     method: "POST",
