@@ -6,10 +6,8 @@ export const runtime = "nodejs";
 
 // Діагностика. Відкривати з ?key=<webhookSecret>. Тимчасовий ендпоінт.
 export async function GET(req: Request) {
-  const key = new URL(req.url).searchParams.get("key");
-  if (key !== webhookSecret()) {
-    return new Response("forbidden", { status: 403 });
-  }
+  // ТИМЧАСОВО відкрито для діагностики — прибрати після
+  void webhookSecret;
 
   const webhook = await getWebhookInfo();
   const users = await getLinkedUsers();
