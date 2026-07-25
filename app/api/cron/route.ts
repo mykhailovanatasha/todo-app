@@ -4,13 +4,14 @@ import {
   getUserData,
   getChatForUser,
   getUserForChat,
+  getNotifyPrefs,
 } from "@/lib/kv";
 import {
   sendMessage,
   morningMessage,
   middayMessage,
   eveningMessage,
-  currentSlot,
+  kyivHour,
   localISODate,
 } from "@/lib/telegram";
 
@@ -18,14 +19,13 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 type Slot = "morning" | "midday" | "evening";
+const SLOTS: Slot[] = ["morning", "midday", "evening"];
 
-// GET /api/cron?slot=morning|midday|evening  (або без slot — визначить за часом)
-// Викликається GitHub Actions о 10:00 / 14:00 / 21:00 за Києвом.
+// Викликається GitHub Actions щопівгодини. Для кожного користувача перевіряє
+// його власні години нагадувань і шле те, чий час настав. ?slot=... — для тесту.
 export async function GET(req: Request) {
-  const param = new URL(req.url).searchParams.get("slot") as Slot | null;
-  const slot = param ?? currentSlot();
-  if (!slot) return Response.json({ skipped: "поза розкладом" });
-
+  const forced = new URL(req.url).searchParams.get("slot") as Slot | null;
+  const hour = kyivHour();
   const users = await getLinkedUsers();
   const today = localISODate();
   let sent = 0;
@@ -35,32 +35,39 @@ export async function GET(req: Request) {
     if (!chatId) continue;
 
     // пропускаємо застарілі прив'язки: чат уже належить іншому профілю
-    const current = await getUserForChat(chatId);
-    if (current !== userId) continue;
+    if ((await getUserForChat(chatId)) !== userId) continue;
 
-    // антиспам: один слот — один раз на день на користувача
-    const dedupeKey = `sent:${userId}:${slot}:${today}`;
-    const already = await redis.set(dedupeKey, 1, { nx: true, ex: 172800 });
-    if (already === null) continue; // вже надсилали сьогодні
+    const prefs = await getNotifyPrefs(userId);
+    const due: Slot[] = forced
+      ? [forced]
+      : SLOTS.filter((s) => prefs[s] === hour);
+    if (due.length === 0) continue;
+
     const data = await getUserData(userId);
     const tasks = data?.tasks ?? [];
 
-    try {
-      if (slot === "morning") {
-        await sendMessage(chatId, morningMessage(tasks));
-      } else if (slot === "midday") {
-        const { text, buttons } = middayMessage(tasks);
-        await sendMessage(chatId, text, buttons.length ? buttons : undefined);
-      } else {
-        const { text, buttons } = eveningMessage(tasks);
-        await sendMessage(chatId, text, buttons.length ? buttons : undefined);
+    for (const slot of due) {
+      // антиспам: один слот — один раз на день на користувача
+      const dedupeKey = `sent:${userId}:${slot}:${today}`;
+      const already = await redis.set(dedupeKey, 1, { nx: true, ex: 172800 });
+      if (already === null) continue;
+
+      try {
+        if (slot === "morning") {
+          await sendMessage(chatId, morningMessage(tasks));
+        } else if (slot === "midday") {
+          const { text, buttons } = middayMessage(tasks);
+          await sendMessage(chatId, text, buttons.length ? buttons : undefined);
+        } else {
+          const { text, buttons } = eveningMessage(tasks);
+          await sendMessage(chatId, text, buttons.length ? buttons : undefined);
+        }
+        sent++;
+      } catch {
+        await redis.del(dedupeKey);
       }
-      sent++;
-    } catch {
-      // якщо не вдалось — знімаємо позначку, спробуємо наступного разу
-      await redis.del(dedupeKey);
     }
   }
 
-  return Response.json({ slot, users: users.length, sent });
+  return Response.json({ hour, users: users.length, sent });
 }

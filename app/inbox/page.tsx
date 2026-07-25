@@ -43,12 +43,18 @@ function InboxCard({ task }: { task: Task }) {
   const { toggleToday, removeTask, editTask } = usePlanner();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(task.title);
+  const [dateOpen, setDateOpen] = useState(false);
 
   function saveEdit() {
     const trimmed = draft.trim();
     if (trimmed) editTask(task.id, { title: trimmed });
     else setDraft(task.title);
     setEditing(false);
+  }
+
+  function setDeadline(value: string) {
+    editTask(task.id, { deadline: value || undefined });
+    setDateOpen(false);
   }
 
   return (
@@ -112,7 +118,7 @@ function InboxCard({ task }: { task: Task }) {
             🕐 {task.time}
           </span>
         )}
-        {task.deadline &&
+        {task.deadline ? (
           (() => {
             const d = formatDeadline(task.deadline);
             const badgeClass = d.overdue
@@ -121,12 +127,42 @@ function InboxCard({ task }: { task: Task }) {
                 ? "bg-red-100 font-medium text-red-700"
                 : "bg-neutral-100 text-neutral-600";
             return (
-              <span className={`rounded-full px-2.5 py-1 ${badgeClass}`}>
+              <button
+                onClick={() => setDateOpen((v) => !v)}
+                className={`rounded-full px-2.5 py-1 active:opacity-70 ${badgeClass}`}
+              >
                 📅 {d.overdue ? `прострочено · ${d.label}` : d.label}
-              </span>
+              </button>
             );
-          })()}
+          })()
+        ) : (
+          <button
+            onClick={() => setDateOpen((v) => !v)}
+            className="rounded-full border border-dashed border-neutral-300 px-2.5 py-1 text-neutral-400 active:bg-neutral-100"
+          >
+            📅 додати дедлайн
+          </button>
+        )}
       </div>
+
+      {dateOpen && (
+        <div className="mt-3 flex items-center gap-2 rounded-xl bg-neutral-50 p-2.5">
+          <input
+            type="date"
+            value={task.deadline ?? ""}
+            onChange={(e) => setDeadline(e.target.value)}
+            className="flex-1 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-accent"
+          />
+          {task.deadline && (
+            <button
+              onClick={() => setDeadline("")}
+              className="shrink-0 rounded-lg px-3 py-2 text-sm font-medium text-red-500 active:bg-red-50"
+            >
+              Прибрати
+            </button>
+          )}
+        </div>
+      )}
       <button
         onClick={() => toggleToday(task.id)}
         className="mt-3 flex h-11 w-full items-center justify-center gap-1.5 rounded-xl bg-red-50 text-sm font-semibold text-red-600 active:scale-[0.98]"

@@ -51,3 +51,23 @@ export async function getUserForChat(chatId: number): Promise<string | null> {
 export async function getLinkedUsers(): Promise<string[]> {
   return (await redis.smembers(LINKED_SET)) ?? [];
 }
+
+// Години нагадувань (0–23 за Києвом) або null = вимкнено
+export type NotifyPrefs = {
+  morning: number | null;
+  midday: number | null;
+  evening: number | null;
+};
+export const DEFAULT_PREFS: NotifyPrefs = { morning: 10, midday: 14, evening: 21 };
+const prefsKey = (userId: string) => `notify:${userId}`;
+
+export async function getNotifyPrefs(userId: string): Promise<NotifyPrefs> {
+  return (await redis.get<NotifyPrefs>(prefsKey(userId))) ?? DEFAULT_PREFS;
+}
+
+export async function saveNotifyPrefs(
+  userId: string,
+  prefs: NotifyPrefs,
+): Promise<void> {
+  await redis.set(prefsKey(userId), prefs);
+}

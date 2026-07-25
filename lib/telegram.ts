@@ -147,19 +147,17 @@ export function eveningMessage(tasks: Task[]): {
   return { text, buttons };
 }
 
-// Визначаємо слот за київською годиною (для GitHub Actions cron)
-export function currentSlot(): "morning" | "midday" | "evening" | null {
-  const hour = Number(
-    new Date().toLocaleString("en-US", {
-      timeZone: "Europe/Kyiv",
-      hour: "2-digit",
-      hour12: false,
-    }),
+// Поточна київська година (0–23)
+export function kyivHour(): number {
+  return (
+    Number(
+      new Date().toLocaleString("en-US", {
+        timeZone: "Europe/Kyiv",
+        hour: "2-digit",
+        hour12: false,
+      }),
+    ) % 24
   );
-  if (hour >= 9 && hour < 12) return "morning";
-  if (hour >= 12 && hour < 17) return "midday";
-  if (hour >= 17 && hour < 23) return "evening";
-  return null;
 }
 
 export { localISODate };
